@@ -15,17 +15,30 @@
 
 import h5py
 from pathlib import Path
+import os
 import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point
 import matplotlib.pyplot as plt
+import re
 
-path_prec = Path("DATA/PRECIPTACAO/")
-file = path_prec / '3B42.20080330.00.7A.HDF'
 
-file.as_posix()
+def read_hdf(path):
+    hdf = h5py.File(path, "r")
+    a_group_key = list(hdf.keys())[0]
 
-prec = h5py.File(file.as_posix(), "r")
+    # Get the data
+    data = np.array(hdf[a_group_key])
+    return np.rot90(data)
+
+
+path_prec = "DATA/PRECIPTACAO/"
+files = os.listdir(path_prec)
+
+file = "DATA/PRECIPTACAO/" + files[0]
+file
+
+prec = h5py.File(file, "r")
 prec
 
 # +
@@ -79,6 +92,22 @@ plt.imshow(mask)
 
 masked_data = np.ma.masked_array(data,mask)
 plt.imshow(masked_data,cmap="terrain")
+plt.colorbar();
+
+month = np.full_like(data,0)
+
+
+r = re.compile("3B42.199805")
+iter_199805 = filter(r.match,files)
+
+for file in iter_199805:
+    data = read_hdf(path_prec + file)
+    masked_data = np.ma.MaskedArray(data,mask)
+    month = month + masked_data
+
+masked_data = np.ma.masked_array(data,mask)
+plt.figure(figsize=(10,10))
+plt.pco(month,cmap="terrain")
 plt.colorbar();
 
 
